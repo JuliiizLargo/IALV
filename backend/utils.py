@@ -9,9 +9,10 @@ def itinerary_to_ics_content(city, start_date, days, plan_text) -> str:
     for i in range(days):
         e = Event()
         e.name = f"Viaje a {city} - Día {i+1}"
-        # Asumimos evento de día completo; ics acepta date o datetime. Usamos begin como fecha.
-        e.begin = base_date + timedelta(days=i)
-        e.make_all_day()
+        # Definir una duración razonable (por ejemplo 9:00 a 18:00)
+        day_start = base_date + timedelta(days=i, hours=9)
+        e.begin = day_start
+        e.end = day_start + timedelta(hours=9)
         e.description = plan_text
         cal.events.add(e)
 
