@@ -1,11 +1,11 @@
 import os
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from serp_client import search_hotels, search_flights, search_places
-from itinerary import generate_itinerary
-from utils import itinerary_to_ics_content
-from serp_client import SerpApiError
-from groq_client import GroqClientError
+from backend.serp_client import search_hotels, search_flights, search_places
+from backend.itinerary import generate_itinerary
+from backend.utils import itinerary_to_ics_content
+from backend.serp_client import SerpApiError
+from backend.groq_client import GroqClientError
 from datetime import datetime, timedelta
 from flask_cors import CORS
 
@@ -89,7 +89,7 @@ def api_ask():
     # Preflight
     if request.method == "OPTIONS":
         return ("", 204)
-    from groq_client import ask_groq
+    from backend.groq_client import ask_groq
     data = (request.get_json(silent=True) or {})
     question = (data.get("question") or "").strip()
     if len(question) < 3:
