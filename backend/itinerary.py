@@ -1,4 +1,4 @@
-from groq_client import ask_groq
+from backend.groq_client import ask_groq
 
 def generate_itinerary(city: str, days: int, hotels, flights, places) -> str:
     def fmt_hotels(h):
@@ -59,3 +59,4 @@ def generate_itinerary(city: str, days: int, hotels, flights, places) -> str:
     - Formatea en secciones claras por día con encabezado "Día N".
     """
     return ask_groq(prompt)
+
