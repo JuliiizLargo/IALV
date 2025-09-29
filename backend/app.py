@@ -74,8 +74,14 @@ def api_itinerary():
     except Exception as e:
         return jsonify({"error": f"Error inesperado generando itinerario: {e}", "details": errors}), 500
 
-    ics_content = itinerary_to_ics_content(city, start_date, days, itinerary_text)
-    ics_filename = f"itinerary_{city}.ics"
+    ics_content = None
+    ics_filename = None
+    try:
+        ics_content = itinerary_to_ics_content(city, start_date, days, itinerary_text)
+        ics_filename = f"itinerary_{city}.ics"
+    except Exception as e:
+        # No romper la respuesta si el ICS falla; devolvemos el itinerario y un warning
+        errors["ics"] = f"No se pudo generar ICS: {e}"
 
     return jsonify({
         "itinerary": itinerary_text,
@@ -104,3 +110,4 @@ def api_ask():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
