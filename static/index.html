@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agente Turístico</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <h1>Agente Turístico Conversacional</h1>
+            <p>Planifica tu viaje con itinerarios reales y exporta a Google Calendar</p>
+        </header>
+
+        <!-- Formulario inicial -->
+        <section class="trip-form">
+            <h2>Planifica tu viaje</h2>
+            <form id="trip-form">
+                <input type="text" id="city" name="city" placeholder="Destino (ej: París)" required />
+                <input type="number" id="days" name="days" placeholder="Número de días" min="1" required />
+                <input type="date" id="start_date" name="start_date" required />
+                <button type="submit">Generar Itinerario</button>
+            </form>
+        </section>
+
+        <!-- Caja de chat -->
+        <main id="chat-box" class="chat-box">
+            <div class="message bot">
+                ¡Hola! Soy tu agente turístico.  
+                Puedo ayudarte a planificar un viaje completo, buscar hoteles, vuelos y actividades.  
+                Empieza llenando el formulario o hazme una pregunta aquí abajo 👇
+            </div>
+        </main>
+
+        <!-- Chat -->
+        <form id="chat-form" class="chat-form">
+            <input type="text" id="question" name="question" placeholder="Escribe tu pregunta..." required />
+            <button type="submit">Enviar</button>
+        </form>
+
+        <footer class="chat-footer">
+            © 2025 Planificador de Viajes - Proyecto educativo
+        </footer>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+
+        function addMessage(text, sender, isHtml = false) {
+            const div = document.createElement("div");
+            div.className = `message ${sender}`;
+            if (isHtml) {
+                div.innerHTML = text;
+            } else {
+                div.textContent = text;
+            }
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Formulario de viaje
+        document.getElementById("trip-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const city = document.getElementById("city").value;
+            const days = document.getElementById("days").value;
+            const start_date = document.getElementById("start_date").value;
+
+            addMessage(`Generando itinerario para ${city} (${days} días, desde ${start_date})...`, "user");
+
+            try {
+                const res = await fetch("/api/itinerary", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ city, days, start_date })
+                });
+
+                if (!res.ok) throw new Error("Error en el servidor");
+                const data = await res.json();
+
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`, "bot");
+                    return;
+                }
+
+                addMessage(`<strong>Itinerario:</strong><br>${data.itinerary}`, "bot", true);
+
+                // Mostrar advertencias si hubo fallos parciales con APIs externas
+                if (data.warnings) {
+                    const w = Object.entries(data.warnings)
+                        .map(([k, v]) => `- ${k}: ${v}`)
+                        .join('<br>');
+                    addMessage(`<em>Advertencias:</em><br>${w}`, "bot", true);
+                }
+
+                // Botón de descarga .ics desde contenido en memoria
+                if (data.ics_content && data.ics_filename) {
+                    const blob = new Blob([data.ics_content], { type: 'text/calendar;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const linkHtml = `<a href="${url}" class="download-btn" download="${data.ics_filename}">📅 Exportar a Google Calendar</a>`;
+                    addMessage(linkHtml, "bot", true);
+                }
+
+            } catch (err) {
+                addMessage(" Error al generar el itinerario.", "bot");
+            }
+        });
+
+        // 📌Chat normal
+        document.getElementById("chat-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const question = document.getElementById("question").value.trim();
+            if (!question) return;
+
+            addMessage(question, "user");
+            document.getElementById("question").value = "";
+
+            try {
+                const res = await fetch("/api/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question })
+                });
+
+                if (!res.ok) throw new Error("Error en el servidor");
+                const data = await res.json();
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`, "bot");
+                } else {
+                    addMessage(data.answer, "bot");
+                }
+
+            } catch (err) {
+                addMessage("Ocurrió un error. Intenta nuevamente.", "bot");
+            }
+        });
+    </script>
+</body>
+</html>
