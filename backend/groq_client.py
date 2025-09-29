@@ -1,8 +1,11 @@
 import os
 from groq import Groq
+import httpx
 
 API_KEY = os.getenv("GROQ_API_KEY")
-client = Groq(api_key=API_KEY) if API_KEY else None
+# Proveer http_client explícito para evitar que el SDK construya uno con kwargs incompatibles
+_http_client = httpx.Client(timeout=30.0)
+client = Groq(api_key=API_KEY, http_client=_http_client) if API_KEY else None
 
 class GroqClientError(Exception):
     pass
